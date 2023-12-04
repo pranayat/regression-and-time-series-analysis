@@ -1,0 +1,229 @@
+---
+title: "RTSA SS23: Exercise Sheet 5"
+output: html_document
+author:
+  - name: Martin Memmesheimer
+  - name: Pranaya Tomar
+date: "21.05.2023"
+---
+
+<!---------------- Some custom CSS. DO NOT CHANGE ANYTHING HERE --------------->
+<style>
+
+/*          this styles a box that we are going to use for feedback           */
+
+.feedbackbox {
+  padding: 1em;
+  background: #042c58;
+  color: white;
+  border: 2px solid #042c58;  /* RPTU dunkelblau */
+  border-radius: 5px;
+}
+
+</style>
+
+```{r setup, include=FALSE}
+# always keep this code chunk at the top
+# it sets the global chunk option that code *and* output are rendered
+# remember, we need to see your code in order to grade it
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+::: {.feedbackbox}
+**FEEDBACK**
+
+Leave this as it is, we fill it out while grading.
+:::
+
+<!------------------------- now, your part starts ----------------------------->
+
+# Exercise 5.2
+
+```{r}
+data <- readRDS("bikes.rds")
+temp <- data$temp
+count <- data$count
+model <- lm(count ~ temp)
+```
+
+## Part (b)
+
+```{r}
+leverage <- hatvalues(model)
+cooks <- cooks.distance(model)
+h_bar <- 2 / length(temp)
+plot(leverage, cooks, pch = 19)
+abline(v = 2 * h_bar)
+abline(h = 1)
+
+```
+
+Visually we can identify leverage points and outliers in the graph as all points on the right of the vertical line are leverage points and all points above the horizontal line are outliers.
+Below first the index of leverage points and then of outliers are calculated concretely.
+
+```{r}
+leverage_points <- data.frame(
+  index = seq(1, length(leverage)),
+  leverage
+)
+subset(leverage_points, leverage > 2 * h_bar)$index
+
+outlier_points <- data.frame(
+  index = seq(1, length(cooks)),
+  cooks
+)
+subset(outlier_points, cooks > 1)$index
+```
+
+<!------ please separate different exercises with a line ---------------------->
+
+# Exercise 5.3
+```{r}
+#' @param y character string, variable name of dependent variable
+#' @param regressor_names vector of character strings of the names of the regressors
+#' @return 
+#' vector of character strings with the complete model formulas for all possible 
+#' combinations of regressors.
+getAllModels <- function(y_name, regressor_names){
+  # combn(x,m) returns all possible combinations of m elements from vector x
+  regressors <-lapply(1:length(regressor_names), combn, x=regressor_names)
+  formulas_regressors <- unlist(lapply(regressors, function(combis) {
+    rhs_formulas <- apply(combis, MARGIN=2, FUN=paste, collapse="+")
+    return(paste0(y_name,"~", rhs_formulas))
+  }))
+  return(formulas_regressors)
+}
+
+#' @param y character string, variable name of dependent variable
+#' @param regressor_names vector of character strings of the names of the regressors
+#' @return 
+#' character string with formula of the model
+getModel <- function(y_name, regressor_names){
+  return(paste0(y_name, "~", paste(regressor_names, collapse="+")))
+}
+```
+
+```{r}
+load('./Precipitation.rdata')
+model_strings = getAllModels(names(Precipitation)[1], names(Precipitation)[-1])
+
+all_subset_regression <- function() {
+  N = 43
+  adj_r_square_list <- c()
+  rms_list <- c()
+  mallow_list <- c()
+  rms_max <- sum(lm(getModel(names(Precipitation)[1], names(Precipitation)[-1]), Precipitation)$residuals^2)/(N-4)
+  for(model_string in model_strings) {
+    d = lengths(regmatches(model_string, gregexpr("\\+", model_string))) + 1
+    model = lm(model_string, Precipitation)
+    adj_r_square_list <- c(adj_r_square_list, summary(model)$adj.r.squared)
+    rms_list <- c(rms_list, sum(model$residuals^2)/(N-d))
+    mallow_list <- c(mallow_list, (
+      (sum(model$residuals^2)/rms_max) - (N - 2*d))
+      )
+  }
+
+  print(c('Model picked by adjusted R^2:', model_strings[which.max(adj_r_square_list)]))
+  print(c('Model picked by residual mean square:', model_strings[which.min(rms_list)]))
+  print(c('Model picked by Mallows Cp statistic:', model_strings[which.min(mallow_list)]))
+}
+
+all_subset_regression()
+```
+
+c_alpha is the 0.95 quantile of F_d-q,N-d distribution
+```{r}
+backward_elimination <- function() {
+ N = 43
+ 
+ model_big = lm('BSAAM~APSAB+APSLAKE+OPRC+OPSLAKE', Precipitation)
+ d = 4
+ q = 3
+ c_alpha = qf(0.95, df1 = d-q, df2 = N-d, lower.tail = TRUE)
+ print(c('c_alpha', c_alpha))
+ model_small_1 = lm('BSAAM~APSLAKE+OPRC+OPSLAKE', Precipitation)
+ R1 = ((N - d) / ( d - q)) * (sum(model_small_1$residuals^2) - sum(model_big$residuals^2))/sum(model_big$residuals^2)
+ print(c('R1', R1))
+ model_small_2 = lm('BSAAM~APSAB+OPRC+OPSLAKE', Precipitation)
+ R2 = ((N - d) / ( d - q)) * (sum(model_small_2$residuals^2) - sum(model_big$residuals^2))/sum(model_big$residuals^2)
+ print(c('R2', R2))
+ model_small_3 = lm('BSAAM~APSAB+APSLAKE+OPSLAKE', Precipitation)
+ R3 = ((N - d) / ( d - q)) * (sum(model_small_3$residuals^2) - sum(model_big$residuals^2))/sum(model_big$residuals^2)
+ print(c('R3', R3))
+ model_small_4 = lm('BSAAM~APSAB+APSLAKE+OPRC', Precipitation)
+ R4 = ((N - d) / ( d - q)) * (sum(model_small_4$residuals^2) - sum(model_big$residuals^2))/sum(model_big$residuals^2)
+ print(c('R4', R4))
+ print("R1 is the minimum test statistic and is < c_alpha, so APSAB is least significant and we shall remove it")
+ 
+ model_big = model_small_1 #BSAAM~APSLAKE+OPRC+OPSLAKE
+ d = 3
+ q = 2
+ c_alpha = qf(0.95, df1 = d-q, df2 = N-d, lower.tail = TRUE)
+ print(c('c_alpha', c_alpha))
+ model_small_1 = lm('BSAAM~OPRC+OPSLAKE', Precipitation)
+ R1 = ((N - d) / ( d - q)) * (sum(model_small_1$residuals^2) - sum(model_big$residuals^2))/sum(model_big$residuals^2)
+ print(c('R1', R1))
+ model_small_2 = lm('BSAAM~APSLAKE+OPSLAKE', Precipitation)
+ R2 = ((N - d) / ( d - q)) * (sum(model_small_2$residuals^2) - sum(model_big$residuals^2))/sum(model_big$residuals^2)
+ print(c('R2', R2))
+ model_small_3 = lm('BSAAM~APSLAKE+OPRC', Precipitation)
+ R3 = ((N - d) / ( d - q)) * (sum(model_small_3$residuals^2) - sum(model_big$residuals^2))/sum(model_big$residuals^2)
+ print(c('R3', R3))
+ print('R2 is the minimum test statistic and is > c_alpha, so stop and adopt model BSAAM~APSLAKE+OPRC+OPSLAKE')
+}
+
+backward_elimination()
+```
+
+<!------ please separate different exercises with a line ---------------------->
+
+# Exercise 5.4
+
+```{r}
+load("steam_temperature.Rdata")
+old_temperatures <- steam.temp$temperature
+old_steam <- steam.temp$steam
+new_temperatures <- new.measurements$temperature
+
+model <- lm(old_steam ~ old_temperatures)
+model_parameters <- model$coefficients
+new_steam <- model_parameters[1] + model_parameters[2] * new_temperatures
+
+N <- length(old_temperatures)
+m <- mean(old_temperatures)
+m2 <- mean(old_temperatures^2)
+sigma <- sum((model$residuals)^2)/length(old_steam)
+Dsteam <-sqrt(2 * qf(0.975, 2, N - 2) * sigma / N) * sqrt(1 + (new_temperatures - m)^2 / (m2 - m^2))
+lower_pred <- new_steam - Dsteam
+upper_pred <- new_steam + Dsteam
+
+```
+
+## Part (a)
+
+```{r}
+plot(seq(1,25), old_steam, col = "black", pch = 19, xlim = c(2,37), xlab = "date", ylab = "amount of steam", xaxt = "n")
+points(seq(26,37), new_steam, col = "blue", pch = 19)
+segments(seq(26,37), lower_pred, y1 = upper_pred, col = "blue")
+axis.labels <- c(steam.temp$month, new.measurements$month)
+axis(1, at = seq(1, 37), labels = axis.labels, las = 2)
+```
+
+## Part (b)
+
+
+
+```{r}
+plot(old_temperatures, old_steam)
+abline(model)
+abline(v = mean(old_temperatures))
+abline(mean(old_steam), 0)
+
+new_x <- seq(25, 80, 0.5)
+new_predictions <- model_parameters[1] + model_parameters[2] * new_x
+Dsteam <-sqrt(2 * qf(0.975, 2, N - 2) * sigma / N) * sqrt(1 + (new_x - m)^2 / (m2 - m^2))
+lower_pred <- new_predictions - Dsteam
+upper_pred <- new_predictions + Dsteam
+lines(new_x, lower_pred)
+lines(new_x, upper_pred)
+```

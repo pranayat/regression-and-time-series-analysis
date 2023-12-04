@@ -1,0 +1,163 @@
+---
+title: "RTSA SS23: Exercise Sheet 2"
+output: html_document
+author:
+  - name: Martin Memmesheimer
+  - name: Pranaya Tomar
+date: "03.05.2023"
+---
+
+<!---------------- Some custom CSS. DO NOT CHANGE ANYTHING HERE --------------->
+<style>
+
+/*          this styles a box that we are going to use for feedback           */
+
+.feedbackbox {
+  padding: 1em;
+  background: #042c58;
+  color: white;
+  border: 2px solid #042c58;  /* RPTU dunkelblau */
+  border-radius: 5px;
+}
+
+</style>
+
+```{r setup, include=FALSE}
+# always keep this code chunk at the top
+# it sets the global chunk option that code *and* output are rendered
+# remember, we need to see your code in order to grade it
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+::: {.feedbackbox}
+**FEEDBACK**
+
+Leave this as it is, we fill it out while grading.
+:::
+
+<!------------------------- now, your part starts ----------------------------->
+
+# Exercise 2.2
+
+```{r}
+data <- read.table("road-map-20.csv", sep = ",", header = TRUE)
+road <- data$road
+map <- data$map
+```
+
+## Part (a)
+
+```{r}
+calculate_parameters <- function(x, y) {
+  N <- length(y)
+  xN <- sum(x) / N
+  yN <- sum(y) / N
+  b2hat <- sum((y - yN) * (x - xN)) / sum((x - xN)^2)
+  b1hat <- yN - b2hat * xN
+  sigmahat <- sum((y - b1hat - b2hat * x)^2)
+  return(c(b1hat, b2hat, sigmahat))
+}
+```
+
+## Part (b)
+
+```{r}
+parameters <- calculate_parameters(map, road)
+plot(map, road, ylim = c(0, 50))
+abline(parameters[1], parameters[2])
+```
+
+<!------ please separate different exercises with a line ---------------------->
+
+---
+
+# Exercise 2.4
+
+## Part (a)
+
+```{r}
+data_generation <- function(a, N, variance) {
+  Z <- rnorm(N, sd = sqrt(variance))
+  return(a + Z)
+}
+
+estimator1 <- function(data) {
+  return(sum(data) / length(data))
+}
+
+estimator2 <- function(data) {
+  return(median(data))
+}
+
+estimator3 <- function(data) {
+  return(sum(data) / (length(data) + 1))
+}
+
+monte_carlo <- function(a, N, variance, m) {
+  estimations_1 <- c()
+  estimations_2 <- c()
+  estimations_3 <- c()
+  for(i in 1:m) {
+    data_vector <- data_generation(a, N, variance)
+    estimations_1 <- append(estimations_1, estimator1(data_vector))
+    estimations_2 <- append(estimations_2, estimator2(data_vector))
+    estimations_3 <- append(estimations_3, estimator3(data_vector))
+  }
+  estimations.data <- data.frame(
+    estimations_1 = estimations_1,
+    estimations_2 = estimations_2,
+    estimations_3 = estimations_3
+  )
+ return(estimations.data)
+}
+```
+
+## Part(b)
+
+```{r}
+data <- monte_carlo(2, 25, 4, 100)$estimations_1
+hist(data, breaks = 15)
+```
+
+It looks like it is normally distributed with mean $2$. This makes sense since we know that $T_1$ is an unbiased estimator and the random variables $Y_i$ with which we generate the data are normally distributed as well.
+
+## Part(c)
+
+```{r}
+data <- monte_carlo(2, 25, 4, 100)$estimations_2
+hist(data, breaks = 15)
+data <- monte_carlo(2, 25, 4, 100)$estimations_3
+hist(data, breaks = 15)
+```
+
+For $T_2$ it seems like there is a little bit more variance around $a$ than for the $T_1$. For $T_3$ it seems like there is a very small shift in where the estimations for a are centered. We know that $T_1$ and $T_2$ are unbiased estimators while $T_3$ is biased. This would explain the observation regarding the histogram for $T_3$ 
+
+## Part(d)
+
+```{r}
+mse <- function(data, a) {
+  sum((data - a)^2) / length(data)
+}
+N_values <- c(10^2, 10^3, 10^4, 10^5, 10^6)
+data_sets <- lapply(N_values, monte_carlo, a = 2, variance = 4, m = 100)
+estimations1 <- lapply(data_sets, "[", "estimations_1")
+estimations2 <- lapply(data_sets, "[", "estimations_2")
+estimations3 <- lapply(data_sets, "[", "estimations_3")
+estimated_mse_1 <- lapply(estimations1, mse, a = 2)
+estimated_mse_2 <- lapply(estimations2, mse, a = 2)
+estimated_mse_3 <- lapply(estimations3, mse, a = 2)
+par(mfrow = c(1, 3))
+plot(N_values, estimated_mse_1, log = "xy", type = "o", ylim = c(0.0001, 5))
+plot(N_values, estimated_mse_2, log = "xy", type = "o", ylim = c(0.0001, 5))
+plot(N_values, estimated_mse_3, log = "xy", type = "o", ylim = c(0.0001, 5))
+
+```
+
+We see that for all 3 estimators, the estimated mse strictly decreases as N gets larger. If you compare the mse values of the estimators for the same N you can observe that estimator 2 always has a slightly larger MSE than estimator 1 and 3.
+
+```{r}
+unlist(estimated_mse_1) / unlist(estimated_mse_2)
+unlist(estimated_mse_1) / unlist(estimated_mse_3)
+```
+
+As N grows large the ratios tend to go to towards 1. We can observe that the ratio between $T_1$ and $T_3$ is always very near to 1 even for smaller N while the ratio between $T_1$ and $T_2$ is always smaller than 1 indicating that $T_1$ has a smaller mse than $T_2$. Also we see that as N grows larger this ratio seems to improve a bit indicating that the quality of $T_2$ in comparison to $T_1$ improves as N gets larger (not saying that it gets as good as $T_1$).

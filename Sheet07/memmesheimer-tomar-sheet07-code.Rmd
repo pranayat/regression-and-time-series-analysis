@@ -1,0 +1,85 @@
+---
+title: "RTSA SS23: Exercise Sheet 8"
+output: html_document
+author:
+  - name: Martin Memmesheimer
+  - name: Pranaya Tomar
+date: "11.06.2023"
+---
+
+<!---------------- Some custom CSS. DO NOT CHANGE ANYTHING HERE --------------->
+<style>
+
+/*          this styles a box that we are going to use for feedback           */
+
+.feedbackbox {
+  padding: 1em;
+  background: #042c58;
+  color: white;
+  border: 2px solid #042c58;  /* RPTU dunkelblau */
+  border-radius: 5px;
+}
+
+</style>
+
+```{r setup, include=FALSE}
+# always keep this code chunk at the top
+# it sets the global chunk option that code *and* output are rendered
+# remember, we need to see your code in order to grade it
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+::: {.feedbackbox}
+**FEEDBACK**
+
+Leave this as it is, we fill it out while grading.
+:::
+
+<!------------------------- now, your part starts ----------------------------->
+
+# Exercise 8.2
+```{r}
+df <- read.csv("security_log.csv", header=TRUE, sep=';')
+failure_occured = df$System_breakdown
+attack_count = df$Cyber_attacks
+print(df)
+```
+
+## Part (a)
+```{r}
+
+```
+
+## Part (b)
+```{r}
+
+```
+
+## Part (c)
+```{r}
+
+```
+
+<!------ please separate different exercises with a line ---------------------->
+
+# Exercise 8.3
+
+```{r}
+
+```
+
+## Part (a)
+```{r}
+
+```
+
+## Part (b)
+```{r}
+
+```
+
+## Part (c)
+```{r}
+
+```
+<!------ please separate different exercises with a line ---------------------->

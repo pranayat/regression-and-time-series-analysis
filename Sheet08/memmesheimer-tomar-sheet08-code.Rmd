@@ -1,0 +1,166 @@
+---
+title: "RTSA SS23: Exercise Sheet 8"
+output: html_document
+author:
+  - name: Martin Memmesheimer
+  - name: Pranaya Tomar
+date: "11.06.2023"
+---
+
+<!---------------- Some custom CSS. DO NOT CHANGE ANYTHING HERE --------------->
+<style>
+
+/*          this styles a box that we are going to use for feedback           */
+
+.feedbackbox {
+  padding: 1em;
+  background: #042c58;
+  color: white;
+  border: 2px solid #042c58;  /* RPTU dunkelblau */
+  border-radius: 5px;
+}
+
+</style>
+
+```{r setup, include=FALSE}
+# always keep this code chunk at the top
+# it sets the global chunk option that code *and* output are rendered
+# remember, we need to see your code in order to grade it
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+::: {.feedbackbox}
+**FEEDBACK**
+
+Leave this as it is, we fill it out while grading.
+:::
+
+<!------------------------- now, your part starts ----------------------------->
+
+# Exercise 8.1
+
+```{r}
+data <- read.table("fertilizer_seed.txt", header = TRUE)
+```
+
+## Part(a)
+
+```{r}
+summary(aov(data$number.of.plants ~ data$Seed * data$Fertilizer))
+```
+
+We see that the interaction is not significant, therefore we accept the nullhypothesis of no interaction.
+
+## Part(b)
+
+```{r}
+
+seed_1 <- subset(data, Seed = "A-402")
+summary(aov(seed_1$number.of.plants ~ seed_1$Fertilizer))
+
+seed_2 <- subset(data, Seed = "B-894")
+summary(aov(seed_2$number.of.plants ~ seed_2$Fertilizer))
+
+seed_3 <- subset(data, Seed = "C-952")
+summary(aov(seed_3$number.of.plants ~ seed_3$Fertilizer))
+```
+
+Fertilizer is in all 3 significant. Therefore we reject the nullhypothesis in the test.
+
+## Part (c)
+
+```{r}
+summary(aov(data$number.of.plants ~ data$Seed + data$Fertilizer))
+```
+
+Seed is significant and we reject the nullhypothesis.
+
+<!------ please separate different exercises with a line ---------------------->
+
+# Exercise 8.2
+```{r}
+df <- read.csv("security_log.csv", header=TRUE, sep=';')
+System_breakdown = df$System_breakdown
+Cyber_attacks = df$Cyber_attacks
+```
+
+## Part (a)
+```{r}
+lin_model = lm(System_breakdown~Cyber_attacks)
+print(summary(lin_model))
+
+log_model = glm(System_breakdown~Cyber_attacks,family=binomial(link="logit"))
+print(summary(log_model))
+
+```
+
+Logistic Regression coefficients:
+
+- The y-intercept coefficient (Intercept) = -14.3861 is interpreted as the log odds of a system break down occurring if the number of cyber attacks is 0. In this case it is -14.3861 and hence it is highly unlikely that the system will break down as the odds of this happening are e^-14.3861.
+- The Cyber_attacks coefficient = 0.06915 is the slope of the line which is very steep indicating a strong influence of the number of cyber attacks on the log odds of the system breaking down.
+
+Linear Regression coefficients:
+
+- The y-intercept coefficient (Intercept) = -1.42021 is interpreted as the predicted value of the response variable System_breakdown when no cyber attacks occur.
+- The Cyber_attacks coefficient = 0.06915 shows a gentler slope of the regression line showing a gradually increasing linearly relationship between the number of attacks and system breakdown which is not a good fit for the data
+
+## Part (b)
+```{r}
+plot(Cyber_attacks, System_breakdown)
+abline(lin_model, col='red')
+abline(log_model, col='blue')
+
+legend(34, 0.3, inset = .05, legend=c("linear model", "logistic model"), col=c("red","blue"), lty=c(1,1), title="Legend")
+```
+
+We observe 2 things about the data in the plot above:
+
+1. The response variable is binary and has only 2 values 0,1
+2. The relationship between cyber attack counts and the occurance of a system breakdown is not linear but sigmoidal. We see mostly 0's till 30 and only 1's b/w 30 to 40.
+
+Hence logistic regression, which assumes a sigmoidal relationship between the predictors and the probabilities of a binary response variable is a suitable model in this situation.
+
+## Part (c)
+```{r}
+prob = predict(log_model, data.frame(Cyber_attacks=26), type = c("response"))
+print(c('Probability of system failure = ', prob))
+```
+
+<!------ please separate different exercises with a line ---------------------->
+
+# Exercise 8.3
+
+```{r}
+load("titanic.Rdata")
+```
+
+## Part (a)
+```{r}
+lin_model = lm(Survival~Class, titanic)
+print(summary(lin_model))
+prob = predict(lin_model, data.frame(passengers))
+print(cbind(Class=passengers$Class, Survival_probability=prob))
+```
+
+Looking at the survival probabilities of the 6 passengers it looks like the survival probability decreases as the class of the passenger increases.
+The is also reflected in the LS estimates Class2 and Class3 which are negative.
+
+## Part (b)
+```{r}
+logit_model = glm(Survival~Class+Age+Sex+Siblings+Parents+Fare, titanic, family=binomial(link="logit"))
+print(summary(logit_model))
+probit_model = glm(Survival~Class+Age+Sex+Siblings+Parents+Fare,titanic, family=binomial(link="probit"))
+print(summary(probit_model))
+```
+The passenger class is significant as can be seen from the small p value of the dummy variables Class2 and Class3.
+
+## Part (c)
+```{r}
+logit_prob = predict(logit_model, data.frame(passengers), type = c("response"))
+print(cbind(passengers, Survival_probability=logit_prob))
+probit_prob = predict(probit_model, data.frame(passengers), type = c("response"))
+print(cbind(passengers, Survival_probability=probit_prob))
+```
+Both the logit and probit models show a higher survival probability for women when compared to men even across all classes. So the lowest survival probability of a woman in class 3 (0.564840 in logit) is still higher than the highest survival probability of a man in class 1 (0.51430498). So we can say that the data does reflect the women first policy (for children we need to test with data that differs in age).
+
+<!------ please separate different exercises with a line ---------------------->

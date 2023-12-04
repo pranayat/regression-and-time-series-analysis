@@ -1,0 +1,78 @@
+---
+title: "RTSA SS23: Exercise Sheet 9"
+output: html_document
+author:
+  - name: Martin Memmesheimer
+  - name: Pranaya Tomar
+date: "19.06.2023"
+---
+
+<!---------------- Some custom CSS. DO NOT CHANGE ANYTHING HERE --------------->
+<style>
+
+/*          this styles a box that we are going to use for feedback           */
+
+.feedbackbox {
+  padding: 1em;
+  background: #042c58;
+  color: white;
+  border: 2px solid #042c58;  /* RPTU dunkelblau */
+  border-radius: 5px;
+}
+
+</style>
+
+```{r setup, include=FALSE}
+# always keep this code chunk at the top
+# it sets the global chunk option that code *and* output are rendered
+# remember, we need to see your code in order to grade it
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+::: {.feedbackbox}
+**FEEDBACK**
+
+Leave this as it is, we fill it out while grading.
+:::
+
+<!------------------------- now, your part starts ----------------------------->
+
+# Exercise 9.2
+
+```{r}
+
+```
+
+## Part(a)
+
+```{r}
+library(dplyr)
+df <- read.csv("montreal-bike-data.csv", header=TRUE, sep=',')
+df$Date = as.Date(df$Date, "%d/%m/%Y")
+print(nrow(df))
+df = df %>% filter(between(df$Date, as.Date('01/05/2015', "%d/%m/%Y"), as.Date('30/09/2015', "%d/%m/%Y")))
+#inclusive
+print(paste("N = ", nrow(df)))
+
+```
+
+## Part(b)
+
+```{r}
+poisson_model = glm(Berri1 ~ .-Berri1, family = poisson(link = "log"), data = df)
+summary(poisson_model)
+print(paste("N-p = ", nrow(df), "-", 18, "=", nrow(df) - 18))
+print(paste("The residual deviance is ", poisson_model$deviance, " which is much larger than the expected deviance value of ", nrow(df) - 18, "hence the model is not a good fit"))
+```
+
+## Part (c)
+
+```{r}
+library(MASS)
+nb_model = glm.nb(Berri1 ~ .-Berri1, link="log", data = df)
+print(summary(nb_model))
+print(paste("The residual deviance is ", nb_model$deviance, " which is much closer to the expected deviance value of ", nrow(df) - 18, "as compared to the poisson family model, hence the model is a better fit"))
+
+```
+
+<!------ please separate different exercises with a line ---------------------->

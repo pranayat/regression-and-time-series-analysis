@@ -1,0 +1,167 @@
+---
+title: "RTSA SS23: Exercise Sheet 4"
+output: html_document
+author:
+  - name: Martin Memmesheimer
+  - name: Pranaya Tomar
+date: "12.05.2023"
+---
+
+<!---------------- Some custom CSS. DO NOT CHANGE ANYTHING HERE --------------->
+<style>
+
+/*          this styles a box that we are going to use for feedback           */
+
+.feedbackbox {
+  padding: 1em;
+  background: #042c58;
+  color: white;
+  border: 2px solid #042c58;  /* RPTU dunkelblau */
+  border-radius: 5px;
+}
+
+</style>
+
+```{r setup, include=FALSE}
+# always keep this code chunk at the top
+# it sets the global chunk option that code *and* output are rendered
+# remember, we need to see your code in order to grade it
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+::: {.feedbackbox}
+**FEEDBACK**
+
+Leave this as it is, we fill it out while grading.
+:::
+
+<!------------------------- now, your part starts ----------------------------->
+
+# Exercise 4.1
+
+```{r}
+generate_material_plot<-function(filename){
+  df = read.table(filename, header=FALSE, sep = ' ', col.names = c('X','Y'))
+  X = df$X
+  Y = df$Y
+  reg_model = lm(Y~X)
+  Y_hat = fitted(reg_model)
+  
+  plot(X, Y, col = 'red')
+  abline(reg_model, col = 'blue')
+  
+  plot(Y_hat, reg_model$residuals, col='red')
+  abline(h = 0)
+  
+  qqnorm(reg_model$residuals)
+  qqline(reg_model$residuals, col="red", lwd=2)
+  
+  hat_diagonal = hatvalues(reg_model)
+  
+  plot(hat_diagonal, reg_model$residuals^2, col = 'red')
+}
+```
+
+
+### material_1.txt
+```{r}
+generate_material_plot('material_1.txt');
+```
+
+- Plot 1 - the regression line does not seem to be fit the data which is curved (maybe logarithmic) rather than a straight line.
+- Plot 2 - the non linearity of the data is also reflected in the curve of the residual plot. The residuals go from very small (-ve) to large (+ve) with increasing predicted value of Y and then dip again.
+- Plot 3 - looking at the QQ plot of estimated residuals, we see that the right tail of the residuals is lighter as the sample quantile is less than the theoretical quantile. Since the residuals depend on our model fit which itself is not good, we can't say much about the distribution of the residuals since this may be masked by the bad fit of our model.
+- Plot 4 - none of the leverage points have a high value (max is close to 0.40) and so the residuals can't really be explained as resulting from a leverage point exerting high influence on the model
+
+Solution - we should first try with a more complex model with higher degree polynomials in x, and then check our assumptions about the variance and normality of the data after that.
+
+
+### material_2.txt
+```{r}
+generate_material_plot('material_2.txt');
+```
+
+- Plot 1 - the regression lines does not seem to fit the data, there is one point that has an extreme X value (~35) compared to the other points and could have high leverage
+- Plot 2 - if we exclude the one point which has high residual, the spread of the residuals seems more or less constant and centered around 0
+- Plot 3 - the gap in the QQ plot seems to show a bimodal distribution. The first 5 points seem linear (straight line) and can be said to have a normal distribution centered around -0.75 with a smaller standard deviation (more concentrated quantiles compared to theoretical normal distribution). The next 4 points are the 2nd normal distribution with a heavy tail as the last sample quantile grows larger than the theoretical quantile
+- Plot 4 - only one leverage point has a high value (>0.80) and can be considered an influence point, it still has low residual, so the model seems to have predicted its value well.
+
+Solution - i)check the recording for the high leverage point ii) model the 2 distributions in the bimodal data separately
+
+### material_3.txt
+```{r}
+generate_material_plot('material_3.txt');
+```
+
+- Plot 1 - the regression lines seems to fit the data well
+- Plot 2 - there is no trend between the predicted value and the residuals, and seem to have somewhat constant variance centered around 0
+- Plot 3 - we can again see a gap in the QQ plot possibly indicating a bimodal distribution, neither of these seems to be a normal distribution as the quantiles are not aligned in a straight line
+- Plot 4 - none of the leverage points have a high value (max is 0.30), so no single points has any high influence on the regression line and the residuals can not be explained by any such influence
+
+### material_4.txt
+```{r}
+generate_material_plot('material_4.txt');
+```
+
+- Plot 1 - the regression line seems to be passing higher than the line of the data points, ie. the expectation of the regression is more than the actual expectation fo the data at most points. There seems to be one outlier far from the rest of the data as well that could be an influential point pulling the regression line upwards
+- Plot 2 - the residual plot shows the same, the residuals are mostly negative, but have a band like appearance and exhibit no trend wrt the data
+- Plot 3 - the qq plot shows a right skewed normal distribution
+- Plot 4 - none of the leverage points have a high value (max is around 0.35), the one point with a high residual does not have any high leverage value and hence its residual can not be attributed to it having undue influence
+
+Solution - The influential point cold be pulling the regression upwards a bit so should be investigated for potential recording errors
+
+
+
+### material_5.txt
+```{r}
+generate_material_plot('material_5.txt');
+```
+
+- Plot 1 - data shows a somewhat periodic rise and fall and does not appear to be normal
+- Plot 2 - the residuals show an upward pointing curvature, first increasing with Y_hat and then decreasing, this is more likely due to a non normal distribution of data than an inadequate model. Plot 3 supports this.
+- Plot 3 - the QQ plot is not along a straight line and shows non-normal distribution
+- Plot 4 - none of the leverage points have a high value (max is around 0.14), but we still have high residual values, this again points to the fact that these high residuals are likely due to non-normality of the underlying data rather than any leverage point having undue influence on the model
+
+Solution - estimate the correlation matrix of the data and transform it linearly such that the transformed data is uncorrelated (if found to be correlated)
+
+
+
+<!------ please separate different exercises with a line ---------------------->
+
+# Exercise 4.4
+
+
+```{r}
+datapoints <- read.csv("experiment.csv")
+
+```
+
+
+## Part (a)
+
+The variable x is the explanatory variable, y is the dependent variable.
+
+```{r}
+degree_test <- function(x, y, q, d, alpha) {
+  N <- length(x)
+  model_q <- lm(y ~ poly(x, degree = q, raw = TRUE))
+  model_d <- lm(y ~ poly(x, degree = d, raw = TRUE))
+
+  D0_hat <- sum((model_q$residuals)^2)
+  D_hat <- sum((model_d$residuals)^2)
+
+  R <- (N - d) / (d - q) * (D0_hat - D_hat) / D_hat
+
+  f_alpha <- qf(1 - alpha, d - q, N - d)
+
+  return(R > f_alpha)
+}
+```
+
+## Part(b)
+
+```{r}
+degree_test(datapoints$time, datapoints$data, 4, 6, 0.05)
+```
+
+The null hypothesis gets rejected.

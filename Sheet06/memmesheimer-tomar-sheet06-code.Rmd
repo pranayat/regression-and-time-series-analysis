@@ -1,0 +1,144 @@
+---
+title: "RTSA SS23: Exercise Sheet 6"
+output: html_document
+author:
+  - name: Martin Memmesheimer
+  - name: Pranaya Tomar
+date: "27.05.2023"
+---
+
+<!---------------- Some custom CSS. DO NOT CHANGE ANYTHING HERE --------------->
+<style>
+
+/*          this styles a box that we are going to use for feedback           */
+
+.feedbackbox {
+  padding: 1em;
+  background: #042c58;
+  color: white;
+  border: 2px solid #042c58;  /* RPTU dunkelblau */
+  border-radius: 5px;
+}
+
+</style>
+
+```{r setup, include=FALSE}
+# always keep this code chunk at the top
+# it sets the global chunk option that code *and* output are rendered
+# remember, we need to see your code in order to grade it
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+::: {.feedbackbox}
+**FEEDBACK**
+
+Leave this as it is, we fill it out while grading.
+:::
+
+<!------------------------- now, your part starts ----------------------------->
+
+# Exercise 6.1
+
+```{r}
+df <- read.csv("confidence.csv", header=TRUE, sep=',', stringsAsFactors=FALSE)
+age = df$X
+weight = df$Y
+N = length(age)
+```
+
+## Part (a)
+```{r}
+reg_model = lm(weight~age+log(age))
+summary(reg_model)
+predicted_weight = matrix(c(1, 4.5, log(4.5)), nrow = 1, ncol = 3) %*% matrix(c(reg_model$coefficients[1], reg_model$coefficients[2], reg_model$coefficients[3]),nrow = 3, ncol = 1)
+print(c("Predicted weight for age = 4.5 is", predicted_weight))
+
+```
+## Part (b)
+0.95 confidence interval corresponds to alpha = 0.05
+```{r}
+alpha = 0.05
+q = qnorm(1 - alpha/2, mean = 0, sd = 1)
+xi = matrix(c(1, 4.5, log(4.5)), nrow = 1, ncol = 3)
+X = matrix(c(rep(c(1), times=N), age, log(age)), ncol = 3)
+variance = summary(reg_model)$sigma^2
+
+m1 = predicted_weight - q * sqrt(variance * xi %*% solve(t(X) %*% X) %*% t(xi))
+m2 = predicted_weight + q * sqrt(variance * xi %*% solve(t(X) %*% X) %*% t(xi))
+print(paste("Confidence interval [", m1, ",", m2, "]"))
+
+```
+
+## Part (c)
+```{r}
+d = 3
+f_gamma = qf(0.95, df1 = d, df2 = N-d, lower.tail = TRUE)
+sample_mean = sum(age)/N
+sample_square_mean = sum(age^2)/N
+
+bound1 = function(x){reg_model$coefficients[1] + reg_model$coefficients[2]*x + reg_model$coefficients[3]*log(x) - sqrt(2*f_gamma*variance/N) * sqrt(1 + (x - sample_mean)^2 / (sample_square_mean - sample_mean^2))}
+bound2 = function(x){reg_model$coefficients[1] + reg_model$coefficients[2]*x + reg_model$coefficients[3]*log(x) + sqrt(2*f_gamma*variance/N) * sqrt(1 + (x - sample_mean)^2 / (sample_square_mean - sample_mean^2))}
+
+```
+
+## Part (d)
+```{r}
+plot(age, weight)
+lines(age, fitted(reg_model), col = 'red') # plot the regression curve
+points(x = 4.5, y = predicted_weight, col = 'blue', pch=16, bg = 'blue')
+lines(c(4.5, 4.5), c(m1, m2), col = 'blue')
+par(new=TRUE)
+plot(function(x){reg_model$coefficients[1] + reg_model$coefficients[2]*x + reg_model$coefficients[3]*log(x) - sqrt(2*f_gamma*variance/N) * sqrt(1 + (x - sample_mean)^2 / (sample_square_mean - sample_mean^2))},col='red', lty=2, ann = FALSE)
+par(new=TRUE)
+plot(function(x){reg_model$coefficients[1] + reg_model$coefficients[2]*x + reg_model$coefficients[3]*log(x) + sqrt(2*f_gamma*variance/N) * sqrt(1 + (x - sample_mean)^2 / (sample_square_mean - sample_mean^2))}, col='red', lty=2, ann = FALSE)
+
+legend(9, 45, inset = .05, legend=c("regression curve", "confidence band", "confidence interval", "predicted value"),
+         col=c("red","red","blue","blue"), lty=c(1,2,1,-1), pch=c(-1,-1,-1,16), bg=c("white","white","white","blue"),
+         title="Legend")
+
+```
+
+<!------ please separate different exercises with a line ---------------------->
+
+# Exercise 6.2
+
+```{r}
+calculate_gradient <- function(b, x, y) {
+  p_d_b1 <- -2 * sum((y - b[1] - exp(b[2] * x)))
+  p_d_b2 <- -2 * sum(x * exp(b[2] * x) * (y - b[1] - exp(b[2] * x)))
+  return(c(p_d_b1, p_d_b2))
+}
+
+gradient_descent <- function(b, stepsize, threshold, x, y) {
+  gradient <- calculate_gradient(b, x, y)
+  if (norm(gradient, type = "2") < threshold) {
+    return(b)
+  } else {
+    b_new <- b - stepsize * gradient
+    return(gradient_descent(b_new, stepsize, threshold, x, y))
+  }
+}
+```
+
+## Part (a)
+
+```{r}
+data <- read.csv("nonlinear.csv")
+x <- data$x
+y <- data$y
+
+b_0 <- c(0, 0)
+
+lse <- gradient_descent(b_0, 0.001, 0.001, x, y)
+
+lse
+
+```
+
+## Part (b)
+
+```{r}
+sigma_estimator <- 1 / length(x) * sum((y - lse[1] - exp(lse[2] * x))^2)
+sigma_estimator
+```
+

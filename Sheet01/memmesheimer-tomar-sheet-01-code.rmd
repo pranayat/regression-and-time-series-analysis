@@ -1,0 +1,97 @@
+---
+title: "RTSA SS23: Exercise Sheet 1"
+output: html_document
+author:
+  - name: Martin Memmesheimer
+  - name: Pranaya Tomar
+date: "26.04.2023"
+---
+
+<!---------------- Some custom CSS. DO NOT CHANGE ANYTHING HERE --------------->
+<style>
+
+/*          this styles a box that we are going to use for feedback           */
+
+.feedbackbox {
+  padding: 1em;
+  background: #042c58;
+  color: white;
+  border: 2px solid #042c58;  /* RPTU dunkelblau */
+  border-radius: 5px;
+}
+
+</style>
+
+```{r setup, include=FALSE}
+# always keep this code chunk at the top
+# it sets the global chunk option that code *and* output are rendered
+# remember, we need to see your code in order to grade it
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+::: {.feedbackbox}
+**FEEDBACK**
+
+Leave this as it is, we fill it out while grading.
+:::
+
+<!------------------------- now, your part starts ----------------------------->
+
+# Exercise 1.1
+
+```{r}
+# some general code for the exercise goes here
+# or maybe loading the data
+```
+
+## Part (a)
+
+You discussion for part (a) goes here.
+
+```{r}
+simulate_dice <- function(N) {
+  frequencies <- c(0, 0, 0, 0, 0, 0)
+  # roll this die n times
+  for (i in c(1:N)){
+    x <- sample((1:6), 1) # returns 1 sample number from 1 to 6
+    frequencies[x] <- frequencies[x] + 1
+  }
+  relativ_frequencies <- frequencies / N
+  return(relativ_frequencies)
+}
+```
+
+## Part (b)
+
+```{r}
+x_values <- seq(from = 10, to = 200, by = 10) # values of N (number of rolls)
+y_values <- lapply(lapply(x_values, simulate_dice), "[[", 4)
+# inner lapply returns a list of relative_frequencies vectors from each run [[0.5,0.5,0.5,0.4,0.3,0.3], [0.5,0.5,0.5,0.4,0.3,0.3],...]
+# outer lapply loops over the list of freq vecs and [[ extracts the frequency of 4 from each
+plot(x_values, y_values, type = "o", ylim = c(0, 1), xlab = "N", ylab = "relative frequency of 4")
+```
+
+## Part (c)
+
+```{r}
+x_values <- seq(from = 10, to = 200, by = 10)
+y_values <- lapply(lapply(x_values, simulate_dice), "[[", 4)
+y_values_2 <- lapply(lapply(x_values, simulate_dice), "[[", 4)
+y_values_3 <- lapply(lapply(x_values, simulate_dice), "[[", 4)
+y_values_4 <- lapply(lapply(x_values, simulate_dice), "[[", 4)
+
+plot(x_values, y_values, type = "o", ylim = c(0, 1), xlab = "N", ylab = "relative frequency of 4")
+abline(0.166,0,col='red') #just to show the convergence to theoretical prob 1/6 
+
+#add points to existing plot
+points(x_values, y_values_2)
+lines(x_values, y_values_2)
+points(x_values, y_values_3)
+lines(x_values, y_values_3)
+points(x_values, y_values_4)
+lines(x_values, y_values_4)
+```
+
+You can observe that the estimates scatter less as N gets larger. Also for N = 200 the estimations are only slightly different to the theoretical probability of $\frac{1}{6}$. This is explained by the law of large numbers.
+
+Law of large numbers -  the average of the results obtained from a large number of trials should be close to the expected value and tends to become closer to the expected value as more trials are performed

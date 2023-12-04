@@ -1,0 +1,65 @@
+---
+title: "RTSA SS23: Exercise Sheet 10"
+output: html_document
+author:
+  - name: Martin Memmesheimer
+  - name: Pranaya Tomar
+date: "24.06.2023"
+---
+
+<!---------------- Some custom CSS. DO NOT CHANGE ANYTHING HERE --------------->
+<style>
+
+/*          this styles a box that we are going to use for feedback           */
+
+.feedbackbox {
+  padding: 1em;
+  background: #042c58;
+  color: white;
+  border: 2px solid #042c58;  /* RPTU dunkelblau */
+  border-radius: 5px;
+}
+
+</style>
+
+```{r setup, include=FALSE}
+# always keep this code chunk at the top
+# it sets the global chunk option that code *and* output are rendered
+# remember, we need to see your code in order to grade it
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+::: {.feedbackbox}
+**FEEDBACK**
+
+Leave this as it is, we fill it out while grading.
+:::
+
+<!------------------------- now, your part starts ----------------------------->
+
+# Exercise 10.3
+
+## Part(b)
+
+```{r}
+autocorrelation_1 = function(b){b/(1+b^2)}
+curve(autocorrelation_1, from=-5, to=5, , xlab="b", ylab="autocorrelation(b) (t=1)")
+  
+```
+
+## Part(c)
+
+```{r}
+epsilon <- rnorm(n=500,mean=0,sd=1)
+X1 = c()
+X2 = c()
+for(t in 1:500){
+  X1[t] = epsilon[t+1]+0.5*epsilon[t]
+  X2[t] = epsilon[t+1]-0.5*epsilon[t]
+}
+
+plot(1:500, X1)
+plot(1:500, X2)
+```
+
+<!------ please separate different exercises with a line ---------------------->

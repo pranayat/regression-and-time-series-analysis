@@ -1,0 +1,128 @@
+---
+title: "RTSA SS23: Exercise Sheet 3"
+output: html_document
+author:
+  - name: Martin Memmesheimer
+  - name: Pranaya Tomar
+date: "06.05.2023"
+---
+
+<!---------------- Some custom CSS. DO NOT CHANGE ANYTHING HERE --------------->
+<style>
+
+/*          this styles a box that we are going to use for feedback           */
+
+.feedbackbox {
+  padding: 1em;
+  background: #042c58;
+  color: white;
+  border: 2px solid #042c58;  /* RPTU dunkelblau */
+  border-radius: 5px;
+}
+
+</style>
+
+```{r setup, include=FALSE}
+# always keep this code chunk at the top
+# it sets the global chunk option that code *and* output are rendered
+# remember, we need to see your code in order to grade it
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+::: {.feedbackbox}
+**FEEDBACK**
+
+Leave this as it is, we fill it out while grading.
+:::
+
+<!------------------------- now, your part starts ----------------------------->
+
+# Exercise 3.1
+
+Loading data for 3.1 and 3.2
+```{r}
+df <- read.csv("children.csv", header=TRUE, sep=';', stringsAsFactors=FALSE)
+ages = df$age
+weights = df$weight
+N = length(ages)
+print(ages)
+print(weights)
+```
+
+## Part (a)
+
+You discussion for part (a) goes here.
+
+```{r}
+
+reg_model = lm(weights~ages)
+
+b1_hat = coef(reg_model)[1]
+b2_hat = coef(reg_model)[2]
+cat("Least square estimates of b1 and b2:\nb1_hat =", b1_hat, "\nb2_hat = ", b2_hat)
+```
+
+## Part (b)
+The variance of residuals Z is $σ^{2}$, Using the ML estimator for $σ^{2}$ as defined in Theorem 2.2.3
+
+```{r}
+x = matrix(c(rep(c(1), times=N), ages), ncol = 2) # first col is just 1's
+y = matrix(weights, ncol = 1)
+b_hat = matrix(c(b1_hat, b2_hat), ncol = 1)
+sigma_hat_square = norm(y - x %*% b_hat, type = "2") / N
+cat("ML estimate of variance of residuals = ", sigma_hat_square)
+```
+The standard deviation of b2_hat is the square root of the variance of b2_hat is found on second diagonal element of the covariance matrix of b_hat defined in Theorem 2.2.3
+```{r}
+covariance_matrix_b = sigma_hat_square * solve(t(x) %*% x)
+print(covariance_matrix_b)
+variance_b2_hat = covariance_matrix_b[2,2]
+standard_deviation_b2_hat = sqrt(variance_b2_hat)
+cat("Standard deviation of b2_hat = ", standard_deviation_b2_hat)
+```
+
+## Part (c)
+
+```{r}
+weight_predictions = fitted(reg_model)
+plot(ages, weights, col = 'red')
+abline(reg_model, col = 'blue')
+for (i in 1:12) {
+  text(ages[i]+0.5, weights[i], round(reg_model$residuals[i], 2)) #residuals
+  lines(c(ages[i],ages[i]),c(weights[i],weight_predictions[i]))
+}
+
+legend(6, 75, inset = .05, legend=c("regression line", "data points with\nresiduals"),
+         col=c("blue","red"),pch = c(-1,1), lty=c(1,-1),
+         title="Legend")
+```
+
+<!------ please separate different exercises with a line ---------------------->
+
+# Exercise 3.2
+## Part (a)
+In theory pdf
+
+## Part (b)
+```{r}
+library(ellipse)
+
+reg_model = lm(weights~ages)
+print(reg_model)
+
+plot(ellipse(reg_model, level=0.95,type="l"))
+```
+
+# Exercise 3.3
+## Part (b)
+I can use the function lm since the parameters $a_0$, $a_1$, $a_2$ all enter all in a linear fashion and only the predictor variables $x_j$ enter in a nonlinear way through $sin$ and $cos$.
+{r}
+```{r}
+data <- read.table("wavy.txt", header = TRUE, sep = ",")
+
+## Part (b)
+model <- lm(data$y ~ cos(data$x) + sin(data$x))
+model$coefficients
+
+summary(model)$sigma**2
+```
